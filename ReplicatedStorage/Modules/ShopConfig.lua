@@ -4,44 +4,33 @@
 --// ShopConfig.lua
 --// Defines all shop items, prices, and categories
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ShopConfig = {}
+
+-- Load CropStatsModule to get seed prices
+local CropStatsModule = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("CropStatsModule"))
+
+-- Dynamically generate Seeds items from CropStatsModule
+local function GenerateSeedsFromCropStats()
+	local seedsTable = {}
+
+	for cropName, cropData in pairs(CropStatsModule.Crops) do
+		table.insert(seedsTable, {
+			Name = cropName,
+			DisplayName = cropName .. " Seeds",
+			Price = cropData.seedCost,  -- Use seedCost from CropStatsModule
+			Description = string.format("Grows in %ds, Sells for $%d", cropData.growthTime, cropData.sellPrice),
+			Icon = "🌾",  -- Default seed icon
+			InventoryType = "Seeds"
+		})
+	end
+
+	return seedsTable
+end
 
 -- Shop items organized by category
 ShopConfig.Items = {
-	Seeds = {
-		{
-			Name = "Wheat",
-			DisplayName = "Wheat Seeds",
-			Price = 1,
-			Description = "Basic crop, grows quickly",
-			Icon = "rbxassetid://0",  -- Replace with actual icon ID
-			InventoryType = "Seeds"
-		},
-		{
-			Name = "Corn",
-			DisplayName = "Corn Seeds",
-			Price = 2,
-			Description = "Medium-value crop",
-			Icon = "rbxassetid://0",  -- Replace with actual icon ID
-			InventoryType = "Seeds"
-		},
-		{
-			Name = "Tomato",
-			DisplayName = "Tomato Seeds",
-			Price = 3,
-			Description = "High-value crop",
-			Icon = "rbxassetid://0",  -- Replace with actual icon ID
-			InventoryType = "Seeds"
-		},
-		{
-			Name = "Carrot",
-			DisplayName = "Carrot Seeds",
-			Price = 2,
-			Description = "Root vegetable, steady profit",
-			Icon = "rbxassetid://0",  -- Replace with actual icon ID
-			InventoryType = "Seeds"
-		},
-	},
+	Seeds = GenerateSeedsFromCropStats(),
 
 	Drones = {
 		{

@@ -51,6 +51,7 @@ local tabFrame = mainFrame:WaitForChild("TabFrame")
 
 --// Reference existing content frame
 local contentFrame = mainFrame:WaitForChild("ContentFrame")
+local contentLayout = contentFrame:WaitForChild("UIGridLayout")
 
 --// Tab data
 local tabs = {
@@ -111,11 +112,16 @@ function updateTabButtons()
 	end
 end
 
---// Item click handler (placeholder for purchase logic)
+--// Item click handler - sends purchase request to server
 function onItemClicked(itemName, itemCost, itemTab)
-	print("Clicked item: " .. itemName .. " | Cost: " .. itemCost .. " | Tab: " .. itemTab)
-	--// TODO: Add your purchase logic here
-	--// Example: Send request to server to purchase item
+	print("Attempting to purchase: " .. itemName .. " | Cost: " .. itemCost .. " | Tab: " .. itemTab)
+
+	-- Send purchase request to server via EventBus
+	EventBus.FireServer("PurchaseFromShop", {
+		ItemName = itemName,
+		Quantity = 1,  -- Purchase 1 item at a time
+		Category = itemTab
+	})
 end
 
 --// Load tab content
@@ -296,6 +302,75 @@ end)
 closeButton.MouseButton1Click:Connect(function()
 	mainFrame.Visible = false
 end)
+
+--//////////////////////////////////////////////////////////
+-- EVENT LISTENERS
+--//////////////////////////////////////////////////////////
+
+--// Listen for purchase results from server
+EventBus.OnClientEvent("ItemPurchased", function(data)
+	if data.Success then
+		print("✅ Purchase successful: " .. data.Message)
+
+		-- Show success feedback to player (you can add UI notification here)
+		local successMessage = Instance.new("TextLabel")
+		successMessage.Size = UDim2.new(0, 300, 0, 60)
+		successMessage.Position = UDim2.new(0.5, -150, 0.1, 0)
+		successMessage.BackgroundColor3 = SHOP_CONFIG.Colors.Success
+		successMessage.TextColor3 = SHOP_CONFIG.Colors.Text
+		successMessage.Font = Enum.Font.GothamBold
+		successMessage.TextScaled = true
+		successMessage.Text = "✅ " .. data.Message
+		successMessage.BorderSizePixel = 0
+		successMessage.Parent = shopGui
+
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 10)
+		corner.Parent = successMessage
+
+		-- Fade out and destroy after 3 seconds
+		task.delay(3, function()
+			successMessage:Destroy()
+		end)
+	else
+		print("❌ Purchase failed: " .. data.Message)
+
+		-- Show error feedback to player
+		local errorMessage = Instance.new("TextLabel")
+		errorMessage.Size = UDim2.new(0, 300, 0, 60)
+		errorMessage.Position = UDim2.new(0.5, -150, 0.1, 0)
+		errorMessage.BackgroundColor3 = SHOP_CONFIG.Colors.Danger
+		errorMessage.TextColor3 = SHOP_CONFIG.Colors.Text
+		errorMessage.Font = Enum.Font.GothamBold
+		errorMessage.TextScaled = true
+		errorMessage.Text = "❌ " .. data.Message
+		errorMessage.BorderSizePixel = 0
+		errorMessage.Parent = shopGui
+
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 10)
+		corner.Parent = errorMessage
+
+		-- Fade out and destroy after 3 seconds
+		task.delay(3, function()
+			errorMessage:Destroy()
+		end)
+	end
+end)
+
+--// Listen for currency updates from server
+local playerCurrency = 0
+EventBus.OnClientEvent("CurrencyUpdated", function(data)
+	playerCurrency = data.Currency
+	print("💰 Currency updated: $" .. playerCurrency)
+
+	-- Update currency display if you add one to the UI
+	-- You can add a currency label to the shop UI here
+end)
+
+--//////////////////////////////////////////////////////////
+-- INITIALIZATION
+--//////////////////////////////////////////////////////////
 
 --// Initialize
 updateTabButtons()
